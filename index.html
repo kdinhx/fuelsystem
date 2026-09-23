@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Piper PA-28-161 Warrior III · 160HP O-320-D3G Fuel System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #050811;
+      color: #e2e8f0;
+      overflow: hidden;
+      user-select: none;
+    }
+    .font-mono-num {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .font-av {
+      font-family: 'Chakra Petch', sans-serif;
+    }
+    .hud-glass {
+      background: rgba(8, 14, 26, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(56, 189, 248, 0.16);
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .hud-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(30, 41, 59, 0.8);
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input.throttle-thumb::-webkit-slider-thumb {
+      background: #f8fafc;
+      border: 2px solid #64748b;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+    }
+    input.mixture-thumb::-webkit-slider-thumb {
+      background: #ef4444;
+      border: 2px solid #b91c1c;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.25);
+      border-radius: 2px;
+    }
+    .smooth-turn {
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .slide-drawer {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    }
+    .primer-pressed {
+      transform: translateY(2px) scale(0.97);
+      background-color: #0284c7 !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.6) !important;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-black">
+
+  <header class="w-full h-11 bg-slate-950/85 backdrop-blur-md border-b border-cyan-500/20 px-3 flex items-center justify-between z-30 shrink-0 select-none">
+    <div class="flex items-center space-x-2.5">
+      <div class="w-6 h-6 rounded-md bg-gradient-to-tr from-cyan-950 to-slate-900 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-av font-bold text-[11px] shadow-[0_0_10px_rgba(6,182,212,0.25)]">
+        W3
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="font-av font-bold text-xs tracking-wider text-slate-100">PA-28-161 WARRIOR III</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-950/80 text-sky-300 font-mono-num font-medium border border-sky-500/30 hidden sm:inline-block">160HP O-320-D3G</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 font-mono-num font-medium border border-emerald-500/30 hidden md:inline-block">MA-4SPA CARB</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 font-mono-num font-medium border border-blue-500/30 hidden lg:inline-block">ELECTRIC PRIMER</span>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 font-mono-num text-[10px]">
+      <div id="badge-master-status" class="px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-emerald-950/80 text-emerald-300 border border-emerald-500/30">
+        <span id="dot-master-status" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="txt-master-status" class="font-semibold tracking-wide">SYSTEM NORMAL</span>
+      </div>
+      <div class="hidden lg:flex items-center space-x-2 text-slate-400 pl-2 border-l border-slate-800">
+        <span>FUEL: <strong id="head-fuel-total" class="text-cyan-400">48.0</strong> GAL</span>
+        <span>•</span>
+        <span>PRESS: <strong id="head-fuel-press" class="text-emerald-400">4.8</strong> PSI</span>
+        <span>•</span>
+        <span>FLOW: <strong id="head-fuel-flow" class="text-amber-400">10.2</strong> GPH</span>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-1">
+      <div class="relative">
+        <button id="btn-views-menu" class="h-7 px-2 text-[11px] font-av rounded-md bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700/80 flex items-center space-x-1 transition-all">
+          <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span class="hidden sm:inline">Views</span>
+          <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="views-dropdown" class="hidden absolute right-0 mt-1 w-48 hud-glass rounded-xl p-1.5 z-50 text-[11px] font-mono-num space-y-0.5 border border-cyan-500/30">
+          <button data-cam="full" class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 flex items-center justify-between">
+            <span>Full Airframe</span><span class="text-[9px] text-slate-500">ISO</span>
+          </button>
+          <button data-cam="engine" class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 flex items-center justify-between">
+            <span>Lycoming O-320</span><span class="text-[9px] text-slate-500">160HP</span>
+          </button>
+          <button data-cam="primer" class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 flex items-center justify-between">
+            <span>Electric Primer Valve</span><span class="text-[9px] text-cyan-400">SOLENOID</span>
+          </button>
+          <button data-cam="carb" class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 flex items-center justify-between">
+            <span>MA-4SPA Carburetor</span><span class="text-[9px] text-slate-500">FLOAT</span>
+          </button>
+          <button data-cam="selector" class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 flex items-center justify-between">
+            <span>Fuel Selector</span><span class="text-[9px] text-slate-500">CABIN</span>
+          </button>
+          <button data-cam="wing" class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 flex items-center justify-between">
+            <span>Left Tank & Tab</span><span class="text-[9px] text-slate-500">17 GAL</span>
+          </button>
+        </div>
+      </div>
+
+      <button id="toggle-xray" title="Toggle Airframe Skin Transparency" class="h-7 px-2 text-[11px] font-mono-num rounded-md bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700/80 flex items-center space-x-1 transition-all">
+        <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        <span class="hidden sm:inline">X-Ray</span>
+      </button>
+
+      <button id="audio-toggle" title="Cockpit Sound Engine" class="w-7 h-7 rounded-md bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-700/80 flex items-center justify-center transition-all">
+        <svg id="audio-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+      </button>
+
+      <button id="btn-info-modal" title="Warrior III POH & Technical Notes" class="w-7 h-7 rounded-md bg-slate-900/90 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 border border-slate-700/80 flex items-center justify-center transition-all">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="relative w-full flex-1 overflow-hidden">
+    <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+    <div class="absolute top-2.5 left-3 pointer-events-none text-[10px] font-mono-num text-slate-500/80 z-10 flex items-center space-x-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-cyan-500/70"></span>
+      <span>Click any 3D component to inspect & focus</span>
+    </div>
+
+    <!-- Floating Scenario Drills Pill Bar -->
+    <div class="absolute top-2.5 right-3 z-10 flex items-center space-x-1.5">
+      <button id="pill-fail-mech" class="h-6 px-2 text-[10px] font-mono-num font-medium rounded-full hud-glass text-slate-300 hover:text-rose-300 hover:border-rose-500/50 border border-slate-800 transition-all flex items-center space-x-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+        <span>Fail Mech Pump</span>
+      </button>
+      <button id="pill-carb-ice" class="h-6 px-2 text-[10px] font-mono-num font-medium rounded-full hud-glass text-slate-300 hover:text-sky-300 hover:border-sky-500/50 border border-slate-800 transition-all flex items-center space-x-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+        <span>Induce Carb Ice</span>
+      </button>
+      <button id="pill-sump-check" class="h-6 px-2 text-[10px] font-mono-num font-medium rounded-full hud-glass text-cyan-300 hover:text-cyan-200 border border-cyan-500/40 transition-all flex items-center space-x-1">
+        <svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        <span>Sump Drains</span>
+      </button>
+    </div>
+
+    <aside id="inspector-drawer" class="slide-drawer translate-x-full absolute top-2 bottom-20 right-3 w-80 hud-glass rounded-2xl p-4 z-20 flex flex-col justify-between shadow-2xl border border-cyan-500/30">
+      <div>
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span id="inspect-tag" class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8]"></span>
+            <span id="inspect-category" class="text-[9px] font-mono-num uppercase tracking-wider text-cyan-400 font-semibold">INDUCTION SYSTEM</span>
+          </div>
+          <button id="btn-close-inspect" class="w-6 h-6 rounded-md hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <h3 id="inspect-title" class="font-av font-bold text-sm text-slate-100 mt-2.5 mb-1.5 tracking-wide">
+          ELECTRIC PRIMER SOLENOID
+        </h3>
+        <p id="inspect-desc" class="text-xs text-slate-300/90 leading-relaxed">
+          Firewall-mounted 12V/24V solenoid valve. Pressing the momentary switch energizes the coil, routing pressurized fuel directly into cylinders 1, 2, and 4.
+        </p>
+
+        <div class="mt-3 hud-card rounded-xl p-2.5 text-[11px] font-mono-num space-y-1.5">
+          <div class="flex justify-between text-slate-400">
+            <span>POH Limit / Voltage:</span>
+            <span id="inspect-spec1" class="text-emerald-400 font-medium">Momentary / 12V DC</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Engine Config:</span>
+            <span id="inspect-spec2" class="text-amber-300 font-medium">O-320-D3G 160HP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] font-mono-num">
+        <button id="btn-recenter-part" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-cyan-950 text-cyan-300 border border-cyan-500/30 flex items-center space-x-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          <span>Recenter Camera</span>
+        </button>
+        <span class="text-slate-500">PA-28-161 POH §7</span>
+      </div>
+    </aside>
+
+    <div id="dock-panel" class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[96%] max-w-4xl hud-glass rounded-2xl border border-cyan-500/25 transition-all duration-300 overflow-hidden">
+      
+      <!-- Dock Header Bar -->
+      <div class="h-10 px-3.5 flex items-center justify-between cursor-pointer border-b border-slate-800/80 bg-slate-950/40 hover:bg-slate-900/30 transition-colors" id="dock-toggle-bar">
+        <div class="flex items-center space-x-3 text-xs font-av font-bold tracking-wider text-slate-200">
+          <span class="flex items-center">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 mr-2 shadow-[0_0_6px_#38bdf8]"></span>
+            WARRIOR III FLIGHT DECK CONSOLE
+          </span>
+          <span id="dock-preview-summary" class="hidden md:inline text-[11px] font-mono-num text-slate-400 font-normal">
+            TANK: <span id="sum-tank" class="text-cyan-400 font-semibold">LEFT</span> · 
+            PUMP: <span id="sum-pump" class="text-slate-400 font-semibold">OFF</span> · 
+            PRIMER: <span id="sum-primer" class="text-slate-400 font-semibold">IDLE</span> · 
+            RPM: <span id="sum-rpm" class="text-sky-300 font-semibold">2350</span> · 
+            PRESS: <span id="sum-press" class="text-emerald-400 font-semibold">4.8 PSI</span>
+          </span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button id="btn-dock-collapse" class="w-6 h-6 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all">
+            <svg id="icon-collapse" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dock Content -->
+      <div id="dock-content" class="p-3.5 grid grid-cols-1 md:grid-cols-12 gap-3 max-h-[380px] overflow-y-auto">
+        
+        <!-- Left Column: Carbureted Fuel Pressure & Tachometer Gauges -->
+        <div class="md:col-span-4 hud-card rounded-xl p-2.5 flex flex-col justify-between space-y-2">
+          <div class="flex items-center justify-between text-[10px] font-av uppercase font-semibold text-slate-400">
+            <span>Engine Instrumentation</span>
+            <span class="text-emerald-400 font-mono-num">0.5 - 8.0 PSI</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col items-center">
+              <div class="relative w-16 h-16 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="transparent"/>
+                  <circle cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="85" fill="transparent" class="opacity-25"/>
+                  <circle id="gauge-press-circle" cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="118" stroke-linecap="round" fill="transparent"/>
+                </svg>
+                <div class="absolute flex flex-col items-center">
+                  <span id="txt-gauge-press" class="font-mono-num font-bold text-sm text-cyan-300">4.8</span>
+                  <span class="text-[7px] font-av text-slate-500">PSI</span>
+                </div>
+              </div>
+              <span class="text-[9px] font-mono-num text-slate-400 mt-1">FUEL PRESS</span>
+            </div>
+
+            <div class="flex flex-col items-center">
+              <div class="relative w-16 h-16 flex items-center justify-center">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="transparent"/>
+                  <circle cx="50" cy="50" r="40" stroke="#38bdf8" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="95" fill="transparent" class="opacity-25"/>
+                  <circle id="gauge-rpm-circle" cx="50" cy="50" r="40" stroke="#38bdf8" stroke-width="8" stroke-dasharray="251" stroke-dashoffset="80" stroke-linecap="round" fill="transparent"/>
+                </svg>
+                <div class="absolute flex flex-col items-center">
+                  <span id="txt-gauge-rpm" class="font-mono-num font-bold text-sm text-sky-300">2350</span>
+                  <span class="text-[7px] font-av text-slate-500">RPM</span>
+                </div>
+              </div>
+              <span class="text-[9px] font-mono-num text-slate-400 mt-1">TACHOMETER</span>
+            </div>
+          </div>
+
+          <!-- Dual Fuel Tanks with 17-Gal Tab Indicator -->
+          <div class="space-y-1.5 pt-1 border-t border-slate-800">
+            <div>
+              <div class="flex justify-between text-[9px] font-mono-num text-slate-300">
+                <span>L TANK</span>
+                <span id="txt-left-gal" class="text-cyan-400 font-semibold">24.0 / 25 GAL</span>
+              </div>
+              <div class="relative w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800 mt-0.5">
+                <div class="absolute top-0 bottom-0 left-[68%] w-0.5 bg-amber-400 z-10" title="17 Gal Tab"></div>
+                <div id="bar-left-tank" class="h-full bg-gradient-to-r from-sky-600 to-cyan-400" style="width: 96%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[9px] font-mono-num text-slate-300">
+                <span>R TANK</span>
+                <span id="txt-right-gal" class="text-cyan-400 font-semibold">24.0 / 25 GAL</span>
+              </div>
+              <div class="relative w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800 mt-0.5">
+                <div class="absolute top-0 bottom-0 left-[68%] w-0.5 bg-amber-400 z-10" title="17 Gal Tab"></div>
+                <div id="bar-right-tank" class="h-full bg-gradient-to-r from-sky-600 to-cyan-400" style="width: 96%"></div>
+              </div>
+            </div>
+            <div class="flex justify-between text-[8px] font-mono-num text-slate-500">
+              <span>0 GAL</span>
+              <span class="text-amber-400">▲ TAB 17G</span>
+              <span>25G FULL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center Column: Piper Fuel Selector with Safety Lockout -->
+        <div class="md:col-span-3 hud-card rounded-xl p-2.5 flex flex-col justify-between items-center text-center space-y-2">
+          <div class="flex justify-between w-full items-center">
+            <span class="text-[10px] font-av uppercase font-semibold text-slate-300">Fuel Selector</span>
+            <span id="latch-indicator" class="text-[8px] font-mono-num font-bold text-emerald-400">LOCKED</span>
+          </div>
+
+          <div class="relative w-20 h-20 my-auto flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border border-slate-700 bg-slate-950/80 flex items-center justify-center">
+              <span class="absolute -top-0.5 text-[8px] font-av font-bold text-cyan-400">LEFT</span>
+              <span class="absolute -bottom-0.5 text-[8px] font-av font-bold text-rose-500">OFF</span>
+              <span class="absolute -right-0.5 text-[8px] font-av font-bold text-cyan-400">RIGHT</span>
+            </div>
+            <div id="selector-pointer" class="w-14 h-3.5 bg-gradient-to-r from-rose-600 via-slate-200 to-rose-600 rounded-sm shadow-md cursor-pointer smooth-turn transform -rotate-90 border border-slate-900">
+              <div class="w-2.5 h-2.5 bg-rose-500 rounded-full absolute -top-0.5 left-0"></div>
+            </div>
+          </div>
+
+          <div class="w-full space-y-1">
+            <button id="btn-unlock-detent" class="w-full py-0.5 text-[8px] font-mono-num font-bold rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40">
+              PRESS SAFETY DETENT
+            </button>
+            <div class="grid grid-cols-3 gap-1">
+              <button id="sel-left" class="py-1 text-[9px] font-mono-num font-bold rounded bg-cyan-600 text-white">LEFT</button>
+              <button id="sel-right" class="py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700">RIGHT</button>
+              <button id="sel-off" class="py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700">OFF</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Power Quadrant, Switches & Momentary Electric Primer -->
+        <div class="md:col-span-5 hud-card rounded-xl p-2.5 flex flex-col justify-between space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <div class="flex justify-between text-[9px] font-mono-num">
+                <span class="text-slate-400">THROTTLE</span>
+                <span id="txt-throttle" class="text-slate-100 font-bold">75%</span>
+              </div>
+              <input id="slider-throttle" type="range" min="0" max="100" value="75" class="throttle-thumb w-full">
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-[9px] font-mono-num">
+                <span class="text-slate-400">MIXTURE</span>
+                <span id="txt-mixture" class="text-rose-400 font-bold">RICH</span>
+              </div>
+              <input id="slider-mixture" type="range" min="0" max="100" value="100" class="mixture-thumb w-full">
+            </div>
+          </div>
+
+          <!-- Switches Strip -->
+          <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800 text-center">
+            <div class="flex flex-col items-center">
+              <span class="text-[8px] font-mono-num text-slate-400 mb-1">AUX PUMP</span>
+              <button id="toggle-boost" class="w-full py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-400 border border-slate-700 transition-all">
+                OFF
+              </button>
+            </div>
+
+            <div class="flex flex-col items-center">
+              <span class="text-[8px] font-mono-num text-slate-400 mb-1">CARB HEAT</span>
+              <button id="toggle-carbheat" class="w-full py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-400 border border-slate-700 transition-all">
+                COLD
+              </button>
+            </div>
+
+            <div class="flex flex-col items-center">
+              <span class="text-[8px] font-mono-num text-slate-400 mb-1">MAGNETOS</span>
+              <select id="select-magneto" class="w-full bg-slate-900 border border-slate-700 text-cyan-300 text-[9px] font-mono-num rounded py-1 px-1 outline-none text-center">
+                <option value="OFF">OFF</option>
+                <option value="R">R</option>
+                <option value="L">L</option>
+                <option value="BOTH" selected>BOTH</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Piper Warrior III Momentary Electric Primer Rocker -->
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800 bg-slate-950/40 rounded-lg p-1.5 border border-slate-800/80">
+            <div class="flex items-center space-x-2">
+              <div id="primer-status-bulb" class="w-3 h-3 rounded-full bg-slate-700 border border-slate-600 transition-all"></div>
+              <div class="text-[9px] font-mono-num flex flex-col">
+                <span class="text-slate-300 font-semibold">ELECTRIC PRIMER:</span>
+                <span id="txt-primer-status" class="text-slate-500">HOLD SWITCH TO PRIME</span>
+              </div>
+            </div>
+            
+            <!-- Momentary push-and-hold button -->
+            <button id="btn-electric-primer" class="px-3 py-1.5 text-[9px] font-mono-num font-bold rounded bg-sky-950 text-sky-300 hover:bg-sky-900 border border-sky-500/40 active:primer-pressed shadow transition-all select-none">
+              PUSH PRIME
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Preflight Sump Sampling Modal -->
+    <div id="sump-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative">
+        <button id="close-sump-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
+        <div class="flex items-center space-x-2.5 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/50 flex items-center justify-center text-cyan-400 font-bold font-av text-sm">
+            DRAIN
+          </div>
+          <div>
+            <h2 class="text-sm font-av font-bold text-white uppercase">Preflight Sump Check (3 Drains)</h2>
+            <p class="text-[11px] text-cyan-400 font-mono-num">Left Wing · Right Wing · Cowl Gascolator</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 my-3">
+          <div class="hud-card p-2.5 rounded-xl flex flex-col items-center text-center space-y-1.5">
+            <span class="text-[9px] font-av font-bold text-slate-300">LEFT WING</span>
+            <div class="w-10 h-14 rounded-b-lg border border-slate-700 bg-slate-950 relative overflow-hidden flex items-end">
+              <div id="sample-liquid-left" class="w-full bg-cyan-400/80 transition-all duration-300" style="height: 0%"></div>
+            </div>
+            <button id="btn-sample-left" class="w-full py-1 text-[8px] font-mono-num font-bold rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200">SAMPLE</button>
+            <span id="txt-sample-left" class="text-[8px] font-mono-num text-slate-500">PENDING</span>
+          </div>
+
+          <div class="hud-card p-2.5 rounded-xl flex flex-col items-center text-center space-y-1.5 border-amber-500/30">
+            <span class="text-[9px] font-av font-bold text-amber-400">GASCOLATOR</span>
+            <div class="w-10 h-14 rounded-b-lg border border-slate-700 bg-slate-950 relative overflow-hidden flex items-end">
+              <div id="sample-liquid-gasc" class="w-full bg-cyan-400/80 transition-all duration-300" style="height: 0%">
+                <div id="sample-water-layer" class="w-full bg-slate-300 transition-all" style="height: 0%"></div>
+              </div>
+            </div>
+            <button id="btn-sample-gasc" class="w-full py-1 text-[8px] font-mono-num font-bold rounded bg-amber-900/80 hover:bg-amber-800 text-amber-200">DRAIN 3S</button>
+            <span id="txt-sample-gasc" class="text-[8px] font-mono-num text-slate-500">PENDING</span>
+          </div>
+
+          <div class="hud-card p-2.5 rounded-xl flex flex-col items-center text-center space-y-1.5">
+            <span class="text-[9px] font-av font-bold text-slate-300">RIGHT WING</span>
+            <div class="w-10 h-14 rounded-b-lg border border-slate-700 bg-slate-950 relative overflow-hidden flex items-end">
+              <div id="sample-liquid-right" class="w-full bg-cyan-400/80 transition-all duration-300" style="height: 0%"></div>
+            </div>
+            <button id="btn-sample-right" class="w-full py-1 text-[8px] font-mono-num font-bold rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200">SAMPLE</button>
+            <span id="txt-sample-right" class="text-[8px] font-mono-num text-slate-500">PENDING</span>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t border-slate-800 text-[10px] font-mono-num">
+          <button id="btn-inject-water" class="text-amber-400 hover:underline">Inject Water Sediment</button>
+          <button id="btn-done-sump" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POH Modal -->
+    <div id="poh-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-xl w-full p-5 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+        <button id="close-poh-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
+        <h2 class="text-base font-av font-bold text-white uppercase mb-1">Piper PA-28-161 Warrior III (160HP O-320-D3G)</h2>
+        <p class="text-xs text-cyan-400 font-mono-num mb-4">Aeronautical POH Data & Factory Electric Primer System</p>
+
+        <div class="space-y-3 text-xs text-slate-300">
+          <div class="hud-card p-3 rounded-xl space-y-1">
+            <h4 class="text-sky-400 font-bold font-av">Electric Primer Operation (POH §7.9)</h4>
+            <p>The Warrior III replaces earlier Cherokee manual pump plungers with an electrical primer switch on the instrument panel. Turning the electric fuel pump ON builds system pressure; depressing the spring-loaded primer switch energizes a firewall-mounted electric solenoid valve that injects fuel directly into cylinders 1, 2, and 4.</p>
+          </div>
+          <div class="hud-card p-3 rounded-xl space-y-1">
+            <h4 class="text-amber-400 font-bold font-av">Semi-Tapered Wings & 17-Gal Tab Fuel</h4>
+            <p>50 US Gal total capacity (48 usable). Each wing contains a 25-gal tank equipped with an internal visual indicator collar tab at 17 gal (34 gal total usable for maximum payload balance).</p>
+          </div>
+          <div class="hud-card p-3 rounded-xl space-y-1">
+            <h4 class="text-cyan-400 font-bold font-av">Low-Pressure Marvel-Schebler MA-4SPA</h4>
+            <p>Operates under low fuel pressure (0.5 to 8.0 PSI, nominal ~4.8 PSI). Powered by an engine-driven diaphragm mechanical pump supplemented by the Facet electric auxiliary boost pump.</p>
+          </div>
+          <div class="hud-card p-3 rounded-xl space-y-1">
+            <h4 class="text-emerald-400 font-bold font-av">Safety Detent Fuel Selector</h4>
+            <p>3-position valve (LEFT, RIGHT, OFF). A mechanical spring latch locks out the OFF setting to prevent accidental in-flight engine starvation. Piper low-wings have no BOTH setting.</p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+          <button id="btn-done-poh" class="px-4 py-1.5 rounded-lg bg-cyan-600 text-white font-av font-bold text-xs">Close Documentation</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const SIM = {
+      tankL: 24.0,
+      tankR: 24.0,
+      selector: 'LEFT',
+      selectorDetentUnlocked: false,
+      boostPump: false,
+      carbHeat: false,
+      carbIce: 0.0,
+      enginePumpHealthy: true,
+      throttle: 75,
+      mixture: 100,
+      magneto: 'BOTH',
+      electricPrimerEngaged: false,
+      primerDuration: 0,
+      primerInjectedGallons: 0,
+      waterContamination: false,
+      fuelPressure: 4.8,
+      fuelFlow: 10.2,
+      engineRPM: 2350,
+      engineRunning: true,
+      audioMuted: true,
+      xraySkin: true,
+      activeComponent: null,
+      dockCollapsed: false
+    };
+
+    const COMPONENT_DATA = {
+      'carburetor': {
+        title: "MARVEL-SCHEBLER MA-4SPA CARBURETOR",
+        category: "Induction System",
+        desc: "Mounted beneath the Lycoming O-320-D3G engine oil sump plenum. Regulates fuel delivery using a float bowl and needle valve operating between 0.5 and 8.0 PSI.",
+        spec1: "0.5 - 8.0 PSI Normal",
+        spec2: "Updraft Venturi Atomization"
+      },
+      'primer_solenoid': {
+        title: "ELECTRIC PRIMER SOLENOID VALVE",
+        category: "Firewall Electrical / Fuel",
+        desc: "12V/24V electric solenoid valve mounted on the engine side of the firewall. When the momentary cockpit primer rocker is held ON, this valve opens, delivering fuel directly to cylinders 1, 2, and 4.",
+        spec1: "12V Momentary Solenoid",
+        spec2: "Cylinders 1, 2, 4 Direct Line"
+      },
+      'carb_heat': {
+        title: "CARB HEAT SHROUD & SCAT DUCT",
+        category: "Induction Anti-Ice",
+        desc: "Exhaust collector heat exchanger. Pulling Carb Heat directs hot unfiltered air into the carburetor throat, clearing ice with a characteristic ~75-100 RPM drop.",
+        spec1: "~75-100 RPM Drop",
+        spec2: "Exhaust Shroud Sourced"
+      },
+      'selector': {
+        title: "3-POSITION FUEL SELECTOR VALVE",
+        category: "Cockpit Floor Console",
+        desc: "Directs fuel from LEFT, RIGHT, or OFF. Includes a spring-loaded mechanical safety detent that must be pressed to rotate into the OFF position.",
+        spec1: "Detent Guarded OFF",
+        spec2: "No 'BOTH' Setting"
+      },
+      'tank_l': {
+        title: "LEFT SEMI-TAPERED WING TANK",
+        category: "Wing Leading Edge",
+        desc: "25 US Gallon capacity (24 usable). Equipped with a visual filler neck indicator tab collar marking exactly 17 gallons (34 gal total).",
+        spec1: "25 Gal (17 Gal Tab)",
+        spec2: "Inboard Sump Drain"
+      },
+      'tank_r': {
+        title: "RIGHT SEMI-TAPERED WING TANK",
+        category: "Wing Leading Edge",
+        desc: "25 US Gallon capacity (24 usable). Suction feeds through underfloor aluminum tubing directly into the 3-position selector.",
+        spec1: "25 Gal (17 Gal Tab)",
+        spec2: "Inboard Sump Drain"
+      },
+      'boost_pump': {
+        title: "FACET AUX ELECTRIC FUEL PUMP",
+        category: "Fuselage Tunnel",
+        desc: "Vane-type electric auxiliary boost pump producing 4.5 to 6.5 PSI. Used during takeoff, landing, starting, electric priming, and in mechanical pump failure.",
+        spec1: "4.5 - 6.5 PSI Backup",
+        spec2: "12V DC Electric Drive"
+      },
+      'gascolator': {
+        title: "MAIN GASCOLATOR / FUEL STRAINER",
+        category: "Lower Firewall",
+        desc: "Sediment filter bowl located at the lowest forward point of the fuselage. Traps water droplets and particulates, drained via lower cowl drain lever.",
+        spec1: "Preflight Sump Point",
+        spec2: "Fine Mesh Wire Filter"
+      },
+      'mech_pump': {
+        title: "ENGINE MECHANICAL DIAPHRAGM PUMP",
+        category: "Accessory Case",
+        desc: "Plunger pump driven directly by an eccentric lobe on the O-320-D3G camshaft. Delivers 3.5 to 6.5 PSI directly to the carburetor bowl.",
+        spec1: "Camshaft Eccentric Drive",
+        spec2: "Primary Engine Supply"
+      }
+    };
+
+    let audioCtx = null, boostOsc = null, boostGain = null, engineOsc = null, engineGain = null, primerOsc = null, primerGain = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+
+        boostOsc = audioCtx.createOscillator();
+        boostGain = audioCtx.createGain();
+        boostOsc.type = 'sawtooth';
+        boostOsc.frequency.setValueAtTime(145, audioCtx.currentTime);
+        boostGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        boostOsc.connect(boostGain);
+        boostGain.connect(audioCtx.destination);
+        boostOsc.start();
+
+        engineOsc = audioCtx.createOscillator();
+        engineGain = audioCtx.createGain();
+        engineOsc.type = 'triangle';
+        engineOsc.frequency.setValueAtTime(60, audioCtx.currentTime);
+        engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        engineOsc.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineOsc.start();
+
+        primerOsc = audioCtx.createOscillator();
+        primerGain = audioCtx.createGain();
+        primerOsc.type = 'sine';
+        primerOsc.frequency.setValueAtTime(420, audioCtx.currentTime);
+        primerGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        primerOsc.connect(primerGain);
+        primerGain.connect(audioCtx.destination);
+        primerOsc.start();
+      } catch (e) {
+        console.warn("Audio init failed", e);
+      }
+    }
+
+    function playClick() {
+      if (SIM.audioMuted || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.03);
+        g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.03);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.03);
+      } catch (e) {}
+    }
+
+    function playSolenoidThump() {
+      if (SIM.audioMuted || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(45, audioCtx.currentTime + 0.06);
+        g.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.07);
+      } catch (e) {}
+    }
+
+    function updateAudioParams() {
+      if (!audioCtx || SIM.audioMuted) return;
+
+      // Aux Boost Pump (Gain reduced by 50% from 0.038 to 0.019)
+      if (SIM.boostPump) {
+        boostGain.gain.setTargetAtTime(0.019, audioCtx.currentTime, 0.05);
+      } else {
+        boostGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      }
+
+      // Electric Primer Hiss
+      if (SIM.electricPrimerEngaged) {
+        primerGain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.05);
+      } else {
+        primerGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      }
+
+      if (SIM.engineRunning && SIM.engineRPM > 200) {
+        const targetFreq = 30 + (SIM.engineRPM / 2700) * 85;
+        const targetVol = 0.025 + (SIM.engineRPM / 2700) * 0.075;
+        engineOsc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.08);
+        engineGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.08);
+      } else {
+        engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+      }
+    }
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050811);
+    scene.fog = new THREE.FogExp2(0x050811, 0.03);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(7.5, 4.8, 7.8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.maxPolarAngle = Math.PI / 2 + 0.05;
+    controls.minDistance = 1.0;
+    controls.maxDistance = 24;
+    controls.target.set(0, 0, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const dirLight = new THREE.DirectionalLight(0xf8fafc, 1.3);
+    dirLight.position.set(9, 14, 8);
+    scene.add(dirLight);
+
+    const skyFillLight = new THREE.DirectionalLight(0x0284c7, 0.9);
+    skyFillLight.position.set(-10, -4, -8);
+    scene.add(skyFillLight);
+
+    const groundGrid = new THREE.GridHelper(26, 26, 0x0369a1, 0x1e293b);
+    groundGrid.position.y = -2.2;
+    scene.add(groundGrid);
+
+    const interactiveMeshes = [];
+    const airframeGroup = new THREE.Group();
+    scene.add(airframeGroup);
+
+    const skinMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x334155,
+      transparent: true,
+      opacity: 0.18,
+      roughness: 0.2,
+      metalness: 0.1,
+      transmission: 0.65,
+      depthWrite: false
+    });
+
+    const airframeEdgesMat = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.22
+    });
+
+    // Fuselage
+    const fuseGeo = new THREE.CylinderGeometry(0.64, 0.44, 5.6, 16);
+    fuseGeo.rotateX(Math.PI / 2);
+    const fuselage = new THREE.Mesh(fuseGeo, skinMaterial);
+    airframeGroup.add(fuselage);
+    fuselage.add(new THREE.LineSegments(new THREE.EdgesGeometry(fuseGeo), airframeEdgesMat));
+
+    // Canopy
+    const cabinGeo = new THREE.BoxGeometry(1.16, 0.74, 1.75);
+    const cabin = new THREE.Mesh(cabinGeo, new THREE.MeshPhysicalMaterial({
+      color: 0x0284c7,
+      transparent: true,
+      opacity: 0.14,
+      roughness: 0.1
+    }));
+    cabin.position.set(0, 0.5, -0.3);
+    airframeGroup.add(cabin);
+
+    // Semi-Tapered NACA 652-415 Wings
+    function createSemiTaperedWing(isRight) {
+      const g = new THREE.Group();
+      const sign = isRight ? 1 : -1;
+
+      const rootGeo = new THREE.BoxGeometry(1.8, 0.16, 1.45);
+      const root = new THREE.Mesh(rootGeo, skinMaterial);
+      root.position.set(sign * 0.9, -0.25, -0.3);
+      g.add(root);
+      root.add(new THREE.LineSegments(new THREE.EdgesGeometry(rootGeo), airframeEdgesMat));
+
+      const taperGeo = new THREE.CylinderGeometry(0.5, 0.72, 2.9, 4);
+      taperGeo.rotateZ(Math.PI / 2);
+      taperGeo.scale(1, 0.15, 1);
+      const taper = new THREE.Mesh(taperGeo, skinMaterial);
+      taper.position.set(sign * 3.25, -0.25, -0.3);
+      g.add(taper);
+      taper.add(new THREE.LineSegments(new THREE.EdgesGeometry(taperGeo), airframeEdgesMat));
+
+      const tipGeo = new THREE.SphereGeometry(0.2, 8, 8);
+      tipGeo.scale(0.3, 0.4, 2.4);
+      const tip = new THREE.Mesh(tipGeo, skinMaterial);
+      tip.position.set(sign * 4.7, -0.25, -0.3);
+      g.add(tip);
+
+      return g;
+    }
+    airframeGroup.add(createSemiTaperedWing(false));
+    airframeGroup.add(createSemiTaperedWing(true));
+
+    // Fixed Tricycle Landing Gear with Wheel Pants
+    const gearMetalMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.4 });
+    const pantMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.4, roughness: 0.3 });
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+
+    function addMainGear(x) {
+      const g = new THREE.Group();
+      const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.25, 8), gearMetalMat);
+      strut.position.set(x, -0.9, -0.2);
+      strut.rotation.z = x > 0 ? -0.12 : 0.12;
+      g.add(strut);
+
+      const pant = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), pantMat);
+      pant.scale.set(0.65, 0.8, 1.8);
+      pant.position.set(x * 1.05, -1.45, -0.2);
+      g.add(pant);
+
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 16), tireMat);
+      tire.rotateZ(Math.PI / 2);
+      tire.position.set(x * 1.05, -1.5, -0.2);
+      g.add(tire);
+      airframeGroup.add(g);
+    }
+    addMainGear(-1.55);
+    addMainGear(1.55);
+
+    // Nose Gear
+    const noseG = new THREE.Group();
+    const noseStrut = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.1, 8), gearMetalMat);
+    noseStrut.position.set(0, -0.9, -2.0);
+    noseG.add(noseStrut);
+    const nosePant = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), pantMat);
+    nosePant.scale.set(0.6, 0.75, 1.7);
+    nosePant.position.set(0, -1.42, -2.0);
+    noseG.add(nosePant);
+    const noseTire = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.09, 16), tireMat);
+    noseTire.rotateZ(Math.PI / 2);
+    noseTire.position.set(0, -1.45, -2.0);
+    noseG.add(noseTire);
+    airframeGroup.add(noseG);
+
+    // Empennage
+    const stabGeo = new THREE.BoxGeometry(3.1, 0.06, 0.65);
+    const stab = new THREE.Mesh(stabGeo, skinMaterial);
+    stab.position.set(0, 0.22, 2.6);
+    airframeGroup.add(stab);
+    const finGeo = new THREE.BoxGeometry(0.08, 1.35, 0.85);
+    const fin = new THREE.Mesh(finGeo, skinMaterial);
+    fin.position.set(0, 0.75, 2.45);
+    airframeGroup.add(fin);
+
+    const engineGroup = new THREE.Group();
+    engineGroup.position.set(0, 0, -2.4);
+    airframeGroup.add(engineGroup);
+
+    const crankcase = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.58, 1.05), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 }));
+    engineGroup.add(crankcase);
+
+    const oilSump = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.22, 0.8), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5 }));
+    oilSump.position.set(0, -0.38, 0);
+    engineGroup.add(oilSump);
+
+    const cylPositions = [
+      { x: -0.55, y: 0.05, z: -0.28, id: 1 },
+      { x: 0.55, y: 0.05, z: -0.18, id: 2 },
+      { x: -0.55, y: 0.05, z: 0.14, id: 3 },
+      { x: 0.55, y: 0.05, z: 0.24, id: 4 }
+    ];
+
+    cylPositions.forEach((pos) => {
+      const cGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.52, 14);
+      cGeo.rotateZ(Math.PI / 2);
+      const cMesh = new THREE.Mesh(cGeo, new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.35 }));
+      cMesh.position.set(pos.x, pos.y, pos.z);
+      engineGroup.add(cMesh);
+    });
+
+    const spinner = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.55, 16), new THREE.MeshStandardMaterial({ color: 0xcfd4dc, metalness: 0.8, roughness: 0.2 }));
+    spinner.geometry.rotateX(-Math.PI / 2);
+    spinner.position.set(0, 0, -0.85);
+    engineGroup.add(spinner);
+
+    const propBlades = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.22, 0.03), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 }));
+    propBlades.position.set(0, 0, -0.7);
+    engineGroup.add(propBlades);
+
+    // MA-4SPA Carburetor
+    const carbGroup = new THREE.Group();
+    carbGroup.position.set(0, -0.58, -0.05);
+    carbGroup.name = "carburetor";
+    engineGroup.add(carbGroup);
+
+    const carbBody = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.26), new THREE.MeshStandardMaterial({ color: 0x6366f1, metalness: 0.6 }));
+    carbBody.name = "carburetor";
+    carbGroup.add(carbBody);
+    interactiveMeshes.push(carbBody);
+
+    const carbBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0x4f46e5, metalness: 0.7 }));
+    carbBowl.position.set(0, -0.12, 0);
+    carbBowl.name = "carburetor";
+    carbGroup.add(carbBowl);
+    interactiveMeshes.push(carbBowl);
+
+    // Carb Heat Shroud
+    const exhaustShroud = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 12), new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.7 }));
+    exhaustShroud.geometry.rotateZ(Math.PI / 2);
+    exhaustShroud.position.set(0.35, -0.42, 0.1);
+    exhaustShroud.name = "carb_heat";
+    engineGroup.add(exhaustShroud);
+    interactiveMeshes.push(exhaustShroud);
+
+    // Warrior III Electric Primer Solenoid Valve
+    const primerSolenoidGroup = new THREE.Group();
+    primerSolenoidGroup.position.set(0.28, 0.18, 0.45);
+    primerSolenoidGroup.name = "primer_solenoid";
+    engineGroup.add(primerSolenoidGroup);
+
+    const solenoidBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.065, 0.16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.3 })
+    );
+    solenoidBody.name = "primer_solenoid";
+    primerSolenoidGroup.add(solenoidBody);
+    interactiveMeshes.push(solenoidBody);
+
+    const solenoidCoilRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.068, 0.015, 8, 16),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.4 })
+    );
+    solenoidCoilRing.rotation.x = Math.PI / 2;
+    primerSolenoidGroup.add(solenoidCoilRing);
+
+    // Indicator LED on the solenoid
+    const solenoidLED = new THREE.Mesh(
+      new THREE.SphereGeometry(0.02, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0x334155 })
+    );
+    solenoidLED.position.set(0, 0.09, 0);
+    primerSolenoidGroup.add(solenoidLED);
+
+    // Wing Tanks
+    const tankGeo = new THREE.BoxGeometry(2.55, 0.26, 1.05);
+    const tankGlassMat = new THREE.MeshPhysicalMaterial({ color: 0x0284c7, transparent: true, opacity: 0.28, roughness: 0.1 });
+
+    const tankLeft = new THREE.Mesh(tankGeo, tankGlassMat);
+    tankLeft.position.set(-2.45, -0.22, -0.3);
+    tankLeft.name = "tank_l";
+    airframeGroup.add(tankLeft);
+    interactiveMeshes.push(tankLeft);
+
+    const fuelLiquidGeo = new THREE.BoxGeometry(2.45, 0.2, 0.95);
+    const fuelLiquidMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0369a1, emissiveIntensity: 0.45, transparent: true, opacity: 0.8 });
+    const liquidLeft = new THREE.Mesh(fuelLiquidGeo, fuelLiquidMat);
+    liquidLeft.position.set(0, -0.02, 0);
+    tankLeft.add(liquidLeft);
+
+    const tabRingGeo = new THREE.RingGeometry(0.04, 0.08, 16);
+    tabRingGeo.rotateX(Math.PI / 2);
+    const tabMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide });
+    const tabL = new THREE.Mesh(tabRingGeo, tabMat);
+    tabL.position.set(0, 0.14, 0);
+    tankLeft.add(tabL);
+
+    const tankRight = new THREE.Mesh(tankGeo, tankGlassMat.clone());
+    tankRight.position.set(2.45, -0.22, -0.3);
+    tankRight.name = "tank_r";
+    airframeGroup.add(tankRight);
+    interactiveMeshes.push(tankRight);
+
+    const liquidRight = new THREE.Mesh(fuelLiquidGeo, fuelLiquidMat.clone());
+    liquidRight.position.set(0, -0.02, 0);
+    tankRight.add(liquidRight);
+
+    const tabR = new THREE.Mesh(tabRingGeo, tabMat.clone());
+    tabR.position.set(0, 0.14, 0);
+    tankRight.add(tabR);
+
+    // Fuel Selector Valve
+    const selectorGroup = new THREE.Group();
+    selectorGroup.position.set(0, -0.38, -0.2);
+    selectorGroup.name = "selector";
+    airframeGroup.add(selectorGroup);
+
+    const selBody = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.14, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 }));
+    selBody.name = "selector";
+    selectorGroup.add(selBody);
+    interactiveMeshes.push(selBody);
+
+    const selKnob3D = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.32), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+    selKnob3D.position.set(0, 0.1, 0);
+    selKnob3D.rotation.y = Math.PI / 2;
+    selKnob3D.name = "selector";
+    selectorGroup.add(selKnob3D);
+    interactiveMeshes.push(selKnob3D);
+
+    // Aux Boost Pump
+    const boostPumpMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.32, 16), new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.5 }));
+    boostPumpMesh.geometry.rotateZ(Math.PI / 2);
+    boostPumpMesh.position.set(0, -0.38, -0.8);
+    boostPumpMesh.name = "boost_pump";
+    airframeGroup.add(boostPumpMesh);
+    interactiveMeshes.push(boostPumpMesh);
+
+    // Cowl Gascolator
+    const gascolatorMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.09, 0.32, 16), new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8 }));
+    gascolatorMesh.position.set(0, -0.42, -1.45);
+    gascolatorMesh.name = "gascolator";
+    airframeGroup.add(gascolatorMesh);
+    interactiveMeshes.push(gascolatorMesh);
+
+    // Mechanical Pump
+    const mechPumpMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.22, 12), new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 }));
+    mechPumpMesh.position.set(0.18, -0.15, -2.05);
+    mechPumpMesh.name = "mech_pump";
+    airframeGroup.add(mechPumpMesh);
+    interactiveMeshes.push(mechPumpMesh);
+
+    // Fluid Lines Setup
+    const pipesGroup = new THREE.Group();
+    airframeGroup.add(pipesGroup);
+
+    function createPipe(points, colorHex, radius = 0.018) {
+      const curve = new THREE.CatmullRomCurve3(points);
+      const tubeGeo = new THREE.TubeGeometry(curve, 32, radius, 8, false);
+      const tubeMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.4, transparent: true, opacity: 0.85 });
+      const mesh = new THREE.Mesh(tubeGeo, tubeMat);
+      pipesGroup.add(mesh);
+      return { curve, mesh };
+    }
+
+    const pipeL = createPipe([new THREE.Vector3(-1.3, -0.3, -0.3), new THREE.Vector3(-0.5, -0.38, -0.28), new THREE.Vector3(-0.15, -0.38, -0.2)], 0x38bdf8);
+    const pipeR = createPipe([new THREE.Vector3(1.3, -0.3, -0.3), new THREE.Vector3(0.5, -0.38, -0.28), new THREE.Vector3(0.15, -0.38, -0.2)], 0x38bdf8);
+    const pipeSelToBoost = createPipe([new THREE.Vector3(0, -0.38, -0.2), new THREE.Vector3(0, -0.38, -0.65)], 0xf59e0b);
+    const pipeBoostToGasc = createPipe([new THREE.Vector3(0, -0.38, -0.95), new THREE.Vector3(0, -0.42, -1.3)], 0xf59e0b);
+    const pipeGascToMech = createPipe([new THREE.Vector3(0, -0.42, -1.5), new THREE.Vector3(0.15, -0.3, -1.75), new THREE.Vector3(0.18, -0.15, -2.05)], 0x10b981);
+    const pipeMechToCarb = createPipe([new THREE.Vector3(0.18, -0.15, -2.05), new THREE.Vector3(0.1, -0.45, -2.25), new THREE.Vector3(0, -0.65, -2.45)], 0x10b981);
+
+    // Electric Primer Supply Pipe (from Gascolator/pressure line to Solenoid Valve)
+    const pipeToPrimer = createPipe([
+      new THREE.Vector3(0, -0.42, -1.45),
+      new THREE.Vector3(0.22, -0.1, -1.75),
+      new THREE.Vector3(0.28, 0.18, -1.95)
+    ], 0x38bdf8, 0.012);
+
+    const PARTICLE_COUNT = 240;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+    const particleColors = new Float32Array(PARTICLE_COUNT * 3);
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+    const particleMat = new THREE.PointsMaterial({ size: 0.065, vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+    const particleSystem = new THREE.Points(particleGeo, particleMat);
+    scene.add(particleSystem);
+
+    const particleData = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particleData.push({
+        pathIndex: Math.floor(Math.random() * 4),
+        t: Math.random(),
+        speed: 0.003 + Math.random() * 0.004,
+        isPrimerStream: i < 40 // First 40 particles dedicated to primer flow
+      });
+    }
+
+    function updatePhysics(delta) {
+      let activeFuel = (SIM.selector === 'LEFT') ? SIM.tankL : (SIM.selector === 'RIGHT') ? SIM.tankR : 0;
+      const hasFuel = activeFuel > 0.05 && !SIM.waterContamination;
+
+      if (SIM.carbIce > 0) {
+        if (SIM.carbHeat) {
+          SIM.carbIce = Math.max(0, SIM.carbIce - delta * 0.16);
+        } else if (SIM.engineRunning) {
+          SIM.carbIce = Math.min(0.85, SIM.carbIce + delta * 0.015);
+        }
+      }
+
+      // Fuel Pressure Dynamics (0.5 to 8.0 PSI scale)
+      let targetPress = 0, targetRPM = 0, targetFlow = 0;
+
+      if (hasFuel && SIM.magneto !== 'OFF') {
+        let mechOut = (SIM.enginePumpHealthy && SIM.engineRunning) ? 4.8 : 0;
+        let boostOut = SIM.boostPump ? 5.8 : 0;
+        targetPress = Math.max(mechOut, boostOut);
+
+        const mixRatio = SIM.mixture / 100;
+        const thrRatio = SIM.throttle / 100;
+
+        if (targetPress >= 0.5 && mixRatio > 0.15) {
+          SIM.engineRunning = true;
+          targetRPM = 650 + thrRatio * (2700 - 650);
+          if (SIM.carbHeat) targetRPM -= 85;
+          targetRPM *= (1.0 - SIM.carbIce * 0.7);
+          if (SIM.magneto === 'L' || SIM.magneto === 'R') targetRPM -= 75;
+
+          targetFlow = (3.5 + thrRatio * 11.0) * (0.8 + 0.2 * mixRatio);
+        } else {
+          SIM.engineRunning = false;
+        }
+      } else {
+        SIM.engineRunning = false;
+        targetPress = (SIM.boostPump && hasFuel) ? 5.8 : 0;
+      }
+
+      // Electric Primer Solenoid Fuel Draw
+      if (SIM.electricPrimerEngaged) {
+        SIM.primerDuration += delta;
+        if (targetPress > 0.8) {
+          const primerFlowRate = 1.8; // GPH when energized
+          const primerBurn = (primerFlowRate / 3600) * delta;
+          SIM.primerInjectedGallons += primerBurn;
+          targetFlow += primerFlowRate;
+
+          if (SIM.selector === 'LEFT') SIM.tankL = Math.max(0, SIM.tankL - primerBurn);
+          else if (SIM.selector === 'RIGHT') SIM.tankR = Math.max(0, SIM.tankR - primerBurn);
+        }
+      }
+
+      SIM.fuelPressure += (targetPress - SIM.fuelPressure) * 0.1;
+      SIM.engineRPM += (targetRPM - SIM.engineRPM) * 0.08;
+      SIM.fuelFlow += (targetFlow - SIM.fuelFlow) * 0.08;
+
+      if (SIM.fuelFlow > 0.1) {
+        const burn = (SIM.fuelFlow / 3600) * delta * 15;
+        if (SIM.selector === 'LEFT') SIM.tankL = Math.max(0, SIM.tankL - burn);
+        else if (SIM.selector === 'RIGHT') SIM.tankR = Math.max(0, SIM.tankR - burn);
+      }
+
+      liquidLeft.scale.y = Math.max(0.01, SIM.tankL / 25.0);
+      liquidRight.scale.y = Math.max(0.01, SIM.tankR / 25.0);
+
+      if (SIM.engineRPM > 40) {
+        propBlades.rotation.z += (SIM.engineRPM / 60) * Math.PI * 2 * delta;
+      }
+
+      // Update Solenoid 3D visual LED
+      if (SIM.electricPrimerEngaged) {
+        solenoidLED.material.color.setHex(SIM.fuelPressure > 1.0 ? 0x38bdf8 : 0xf59e0b);
+      } else {
+        solenoidLED.material.color.setHex(0x334155);
+      }
+
+      updateParticles(delta);
+      renderUI();
+      updateAudioParams();
+    }
+
+    function updateParticles(delta) {
+      const posArr = particleGeo.attributes.position.array;
+      const colArr = particleGeo.attributes.color.array;
+      const isFlowing = SIM.fuelPressure >= 0.5 && SIM.selector !== 'OFF';
+      const isPriming = SIM.electricPrimerEngaged && SIM.fuelPressure >= 0.8;
+      const flowRate = Math.max(0.25, SIM.fuelFlow / 10);
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const p = particleData[i];
+
+        // Electric Primer Direct Particles
+        if (p.isPrimerStream) {
+          if (isPriming) {
+            p.t += p.speed * 2.5;
+            if (p.t > 1.0) {
+              p.t = 0;
+              p.pathIndex = [0, 1, 3][Math.floor(Math.random() * 3)]; // Cylinders 1, 2, 4
+            }
+          }
+          let pos = new THREE.Vector3();
+          if (p.t < 0.5) {
+            pos = pipeToPrimer.curve.getPoint(p.t * 2);
+          } else {
+            const subT = (p.t - 0.5) * 2;
+            const cylPos = cylPositions[p.pathIndex];
+            pos.set(
+              0.28 + (cylPos.x - 0.28) * subT,
+              0.18 + (cylPos.y - 0.18) * subT,
+              -1.95 + (cylPos.z - 0.45) * subT
+            );
+          }
+          const idx = i * 3;
+          posArr[idx] = pos.x;
+          posArr[idx + 1] = pos.y;
+          posArr[idx + 2] = pos.z;
+
+          const bright = isPriming ? 1.0 : 0.0;
+          colArr[idx] = 0.22 * bright;
+          colArr[idx + 1] = 0.74 * bright;
+          colArr[idx + 2] = 0.97 * bright;
+          continue;
+        }
+
+        // Main Fuel System Particles
+        if (isFlowing) {
+          p.t += p.speed * flowRate;
+          if (p.t > 1.0) {
+            p.t = 0;
+            p.pathIndex = Math.floor(Math.random() * 4);
+          }
+        }
+
+        let pos = new THREE.Vector3();
+        let col = new THREE.Color(0x38bdf8);
+
+        if (p.t < 0.25) {
+          const subT = p.t / 0.25;
+          pos = (SIM.selector === 'LEFT') ? pipeL.curve.getPoint(subT) : (SIM.selector === 'RIGHT') ? pipeR.curve.getPoint(subT) : pipeL.curve.getPoint(0);
+          col.setHex(0x38bdf8);
+        } else if (p.t < 0.5) {
+          const subT = (p.t - 0.25) / 0.25;
+          pos = (subT < 0.5) ? pipeSelToBoost.curve.getPoint(subT * 2) : pipeBoostToGasc.curve.getPoint((subT - 0.5) * 2);
+          col.setHex(0xf59e0b);
+        } else if (p.t < 0.8) {
+          const subT = (p.t - 0.5) / 0.3;
+          pos = (subT < 0.5) ? pipeGascToMech.curve.getPoint(subT * 2) : pipeMechToCarb.curve.getPoint((subT - 0.5) * 2);
+          col.setHex(0x10b981);
+        } else {
+          const subT = (p.t - 0.8) / 0.2;
+          const cylPos = cylPositions[p.pathIndex];
+          pos.set(cylPos.x * subT * 0.9, -0.58 + (cylPos.y + 0.58) * subT, -2.4 + cylPos.z * subT);
+          col.setHex(0x818cf8);
+        }
+
+        const idx = i * 3;
+        posArr[idx] = pos.x;
+        posArr[idx + 1] = pos.y;
+        posArr[idx + 2] = pos.z;
+
+        const bright = isFlowing ? 1.0 : 0.05;
+        colArr[idx] = col.r * bright;
+        colArr[idx + 1] = col.g * bright;
+        colArr[idx + 2] = col.b * bright;
+      }
+      particleGeo.attributes.position.needsUpdate = true;
+      particleGeo.attributes.color.needsUpdate = true;
+    }
+
+    const headFuelTotal = document.getElementById('head-fuel-total');
+    const headFuelPress = document.getElementById('head-fuel-press');
+    const headFuelFlow = document.getElementById('head-fuel-flow');
+    const badgeStatus = document.getElementById('badge-master-status');
+    const txtStatus = document.getElementById('txt-master-status');
+    const dotStatus = document.getElementById('dot-master-status');
+
+    const txtGaugePress = document.getElementById('txt-gauge-press');
+    const gaugePressCircle = document.getElementById('gauge-press-circle');
+    const txtGaugeRpm = document.getElementById('txt-gauge-rpm');
+    const gaugeRpmCircle = document.getElementById('gauge-rpm-circle');
+
+    const txtLeftGal = document.getElementById('txt-left-gal');
+    const txtRightGal = document.getElementById('txt-right-gal');
+    const barLeftTank = document.getElementById('bar-left-tank');
+    const barRightTank = document.getElementById('bar-right-tank');
+
+    const sumTank = document.getElementById('sum-tank');
+    const sumPump = document.getElementById('sum-pump');
+    const sumPrimer = document.getElementById('sum-primer');
+    const sumRpm = document.getElementById('sum-rpm');
+    const sumPress = document.getElementById('sum-press');
+
+    const primerStatusBulb = document.getElementById('primer-status-bulb');
+    const txtPrimerStatus = document.getElementById('txt-primer-status');
+
+    function renderUI() {
+      headFuelTotal.textContent = (SIM.tankL + SIM.tankR).toFixed(1);
+      headFuelPress.textContent = SIM.fuelPressure.toFixed(1);
+      headFuelFlow.textContent = SIM.fuelFlow.toFixed(1);
+
+      if (SIM.electricPrimerEngaged) {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-sky-950/90 text-sky-300 border border-sky-500/50 shadow-[0_0_10px_rgba(56,189,248,0.3)]";
+        txtStatus.textContent = "PRIMER SOLENOID ENERGIZED";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping";
+      } else if (SIM.waterContamination) {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-rose-950/80 text-rose-300 border border-rose-500/40 animate-pulse";
+        txtStatus.textContent = "WATER CONTAMINATION";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-rose-400";
+      } else if (SIM.carbIce > 0.3) {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-sky-950/80 text-sky-300 border border-sky-500/40 animate-pulse";
+        txtStatus.textContent = "CARB ICE DETECTED";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-sky-400";
+      } else if (!SIM.enginePumpHealthy && !SIM.boostPump) {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-rose-950/80 text-rose-300 border border-rose-500/40 animate-pulse";
+        txtStatus.textContent = "MECH PUMP FAIL";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-rose-400";
+      } else if (!SIM.enginePumpHealthy && SIM.boostPump) {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-amber-950/80 text-amber-300 border border-amber-500/40";
+        txtStatus.textContent = "AUX PUMP ACTIVE";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+      } else if (SIM.selector === 'OFF') {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-slate-900 text-slate-400 border border-slate-700";
+        txtStatus.textContent = "FUEL SHUTOFF";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-slate-500";
+      } else {
+        badgeStatus.className = "px-2 py-0.5 rounded-full flex items-center space-x-1.5 bg-emerald-950/80 text-emerald-300 border border-emerald-500/30";
+        txtStatus.textContent = "SYSTEM NORMAL";
+        dotStatus.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+      }
+
+      txtGaugePress.textContent = SIM.fuelPressure.toFixed(1);
+      const pressPct = Math.min(1, Math.max(0, SIM.fuelPressure / 9.0));
+      gaugePressCircle.style.strokeDashoffset = 251 - (251 * pressPct * 0.75);
+
+      txtGaugeRpm.textContent = Math.round(SIM.engineRPM);
+      const rpmPct = Math.min(1, Math.max(0, SIM.engineRPM / 2700));
+      gaugeRpmCircle.style.strokeDashoffset = 251 - (251 * rpmPct * 0.75);
+
+      txtLeftGal.textContent = `${SIM.tankL.toFixed(1)} / 25 GAL`;
+      txtRightGal.textContent = `${SIM.tankR.toFixed(1)} / 25 GAL`;
+      barLeftTank.style.width = `${Math.max(0, (SIM.tankL / 25) * 100)}%`;
+      barRightTank.style.width = `${Math.max(0, (SIM.tankR / 25) * 100)}%`;
+
+      sumTank.textContent = SIM.selector;
+      sumPump.textContent = SIM.boostPump ? "ON" : "OFF";
+      sumPump.className = SIM.boostPump ? "text-cyan-400 font-semibold" : "text-slate-400 font-semibold";
+      sumPrimer.textContent = SIM.electricPrimerEngaged ? "ACTIVE" : "IDLE";
+      sumPrimer.className = SIM.electricPrimerEngaged ? "text-sky-300 font-semibold" : "text-slate-400 font-semibold";
+      sumRpm.textContent = Math.round(SIM.engineRPM);
+      sumPress.textContent = `${SIM.fuelPressure.toFixed(1)} PSI`;
+
+      // Primer UI Switch State
+      if (SIM.electricPrimerEngaged) {
+        primerStatusBulb.className = "w-3 h-3 rounded-full bg-sky-400 border border-sky-300 shadow-[0_0_8px_#38bdf8] animate-pulse";
+        if (SIM.fuelPressure > 0.8) {
+          txtPrimerStatus.textContent = `INJECTING (${SIM.primerDuration.toFixed(1)}s)`;
+          txtPrimerStatus.className = "text-sky-300 font-semibold";
+        } else {
+          txtPrimerStatus.textContent = "SOLENOID OPEN (NO PRESSURE!)";
+          txtPrimerStatus.className = "text-amber-400 font-semibold";
+        }
+      } else {
+        primerStatusBulb.className = "w-3 h-3 rounded-full bg-slate-700 border border-slate-600";
+        txtPrimerStatus.textContent = "HOLD SWITCH TO PRIME";
+        txtPrimerStatus.className = "text-slate-500";
+      }
+    }
+
+    // Fuel Selector Detent & Control
+    const selectorPointer = document.getElementById('selector-pointer');
+    const selLeftBtn = document.getElementById('sel-left');
+    const selRightBtn = document.getElementById('sel-right');
+    const selOffBtn = document.getElementById('sel-off');
+    const btnUnlockDetent = document.getElementById('btn-unlock-detent');
+    const latchIndicator = document.getElementById('latch-indicator');
+
+    btnUnlockDetent.addEventListener('click', () => {
+      initAudio();
+      SIM.selectorDetentUnlocked = true;
+      latchIndicator.textContent = "UNLOCKED";
+      latchIndicator.className = "text-[8px] font-mono-num font-bold text-amber-400 animate-pulse";
+      playClick();
+    });
+
+    function setFuelSelector(pos) {
+      initAudio();
+      if (pos === 'OFF' && !SIM.selectorDetentUnlocked) {
+        latchIndicator.textContent = "PRESS DETENT!";
+        latchIndicator.className = "text-[8px] font-mono-num font-bold text-rose-400 animate-pulse";
+        playClick();
+        return;
+      }
+
+      SIM.selector = pos;
+      SIM.selectorDetentUnlocked = false;
+      latchIndicator.textContent = "LOCKED";
+      latchIndicator.className = "text-[8px] font-mono-num font-bold text-emerald-400";
+      playClick();
+
+      if (pos === 'LEFT') {
+        selectorPointer.style.transform = 'rotate(-90deg)';
+        selKnob3D.rotation.y = Math.PI / 2;
+        selLeftBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-cyan-600 text-white";
+        selRightBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        selOffBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+      } else if (pos === 'RIGHT') {
+        selectorPointer.style.transform = 'rotate(0deg)';
+        selKnob3D.rotation.y = 0;
+        selLeftBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        selRightBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-cyan-600 text-white";
+        selOffBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+      } else {
+        selectorPointer.style.transform = 'rotate(90deg)';
+        selKnob3D.rotation.y = -Math.PI / 2;
+        selLeftBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        selRightBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        selOffBtn.className = "py-1 text-[9px] font-mono-num font-bold rounded bg-rose-600 text-white";
+      }
+    }
+
+    selLeftBtn.addEventListener('click', () => setFuelSelector('LEFT'));
+    selRightBtn.addEventListener('click', () => setFuelSelector('RIGHT'));
+    selOffBtn.addEventListener('click', () => setFuelSelector('OFF'));
+    selectorPointer.addEventListener('click', () => {
+      if (SIM.selector === 'LEFT') setFuelSelector('RIGHT');
+      else if (SIM.selector === 'RIGHT') {
+        SIM.selectorDetentUnlocked = true;
+        setFuelSelector('OFF');
+      } else setFuelSelector('LEFT');
+    });
+
+    // Throttle & Mixture Sliders
+    document.getElementById('slider-throttle').addEventListener('input', (e) => {
+      initAudio();
+      SIM.throttle = parseInt(e.target.value);
+      document.getElementById('txt-throttle').textContent = `${SIM.throttle}%`;
+    });
+
+    document.getElementById('slider-mixture').addEventListener('input', (e) => {
+      initAudio();
+      SIM.mixture = parseInt(e.target.value);
+      document.getElementById('txt-mixture').textContent = (SIM.mixture === 0) ? "CUTOFF" : (SIM.mixture === 100) ? "RICH" : `${SIM.mixture}%`;
+    });
+
+    // Aux Boost Pump
+    const toggleBoostBtn = document.getElementById('toggle-boost');
+    toggleBoostBtn.addEventListener('click', () => {
+      initAudio();
+      SIM.boostPump = !SIM.boostPump;
+      playClick();
+      if (SIM.boostPump) {
+        toggleBoostBtn.textContent = 'ON';
+        toggleBoostBtn.className = 'w-full py-1 text-[9px] font-mono-num font-bold rounded bg-cyan-600 text-white border border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]';
+      } else {
+        toggleBoostBtn.textContent = 'OFF';
+        toggleBoostBtn.className = 'w-full py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-400 border border-slate-700';
+      }
+    });
+
+    // Carb Heat
+    const toggleCarbHeatBtn = document.getElementById('toggle-carbheat');
+    toggleCarbHeatBtn.addEventListener('click', () => {
+      initAudio();
+      SIM.carbHeat = !SIM.carbHeat;
+      playClick();
+      if (SIM.carbHeat) {
+        toggleCarbHeatBtn.textContent = 'HOT';
+        toggleCarbHeatBtn.className = 'w-full py-1 text-[9px] font-mono-num font-bold rounded bg-orange-600 text-white border border-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.5)]';
+      } else {
+        toggleCarbHeatBtn.textContent = 'COLD';
+        toggleCarbHeatBtn.className = 'w-full py-1 text-[9px] font-mono-num font-bold rounded bg-slate-800 text-slate-400 border border-slate-700';
+      }
+    });
+
+    // Magnetos
+    document.getElementById('select-magneto').addEventListener('change', (e) => {
+      initAudio();
+      SIM.magneto = e.target.value;
+      playClick();
+    });
+
+    // Momentary Electric Primer Rocker Switch Logic
+    const btnElectricPrimer = document.getElementById('btn-electric-primer');
+
+    function startElectricPriming() {
+      initAudio();
+      if (!SIM.electricPrimerEngaged) {
+        SIM.electricPrimerEngaged = true;
+        SIM.primerDuration = 0;
+        playSolenoidThump();
+      }
+    }
+
+    function stopElectricPriming() {
+      if (SIM.electricPrimerEngaged) {
+        SIM.electricPrimerEngaged = false;
+        playClick();
+      }
+    }
+
+    btnElectricPrimer.addEventListener('mousedown', startElectricPriming);
+    window.addEventListener('mouseup', stopElectricPriming);
+    btnElectricPrimer.addEventListener('touchstart', (e) => { e.preventDefault(); startElectricPriming(); });
+    window.addEventListener('touchend', stopElectricPriming);
+
+    // Dock Collapse / Expand Toggle
+    const dockContent = document.getElementById('dock-content');
+    const dockToggleBar = document.getElementById('dock-toggle-bar');
+    const iconCollapse = document.getElementById('icon-collapse');
+
+    dockToggleBar.addEventListener('click', () => {
+      SIM.dockCollapsed = !SIM.dockCollapsed;
+      playClick();
+      if (SIM.dockCollapsed) {
+        dockContent.classList.add('hidden');
+        iconCollapse.classList.add('rotate-180');
+      } else {
+        dockContent.classList.remove('hidden');
+        iconCollapse.classList.remove('rotate-180');
+      }
+    });
+
+    const inspectorDrawer = document.getElementById('inspector-drawer');
+    const inspectTitle = document.getElementById('inspect-title');
+    const inspectCategory = document.getElementById('inspect-category');
+    const inspectDesc = document.getElementById('inspect-desc');
+    const inspectSpec1 = document.getElementById('inspect-spec1');
+    const inspectSpec2 = document.getElementById('inspect-spec2');
+
+    function openInspector(key) {
+      const data = COMPONENT_DATA[key];
+      if (!data) return;
+      SIM.activeComponent = key;
+
+      inspectTitle.textContent = data.title;
+      inspectCategory.textContent = data.category;
+      inspectDesc.textContent = data.desc;
+      inspectSpec1.textContent = data.spec1;
+      inspectSpec2.textContent = data.spec2;
+
+      inspectorDrawer.classList.remove('translate-x-full');
+      inspectorDrawer.classList.remove('opacity-0');
+    }
+
+    document.getElementById('btn-close-inspect').addEventListener('click', () => {
+      inspectorDrawer.classList.add('translate-x-full');
+      SIM.activeComponent = null;
+      playClick();
+    });
+
+    let camTargetPos = null, camTargetLook = null;
+    function flyCamera(pos, look) {
+      camTargetPos = pos.clone();
+      camTargetLook = look.clone();
+    }
+
+    function updateCameraMove() {
+      if (camTargetPos && camTargetLook) {
+        camera.position.lerp(camTargetPos, 0.08);
+        controls.target.lerp(camTargetLook, 0.08);
+        if (camera.position.distanceTo(camTargetPos) < 0.02) {
+          camTargetPos = null;
+          camTargetLook = null;
+        }
+      }
+    }
+
+    function focusComponent(key) {
+      if (key === 'carburetor') flyCamera(new THREE.Vector3(0.7, -0.2, -1.8), new THREE.Vector3(0, -0.6, -2.45));
+      else if (key === 'primer_solenoid') flyCamera(new THREE.Vector3(0.8, 0.4, -1.5), new THREE.Vector3(0.28, 0.18, -1.95));
+      else if (key === 'carb_heat') flyCamera(new THREE.Vector3(1.1, -0.2, -1.9), new THREE.Vector3(0.2, -0.45, -2.3));
+      else if (key === 'selector') flyCamera(new THREE.Vector3(0, 1.1, 0.9), new THREE.Vector3(0, -0.38, -0.2));
+      else if (key === 'tank_l') flyCamera(new THREE.Vector3(-3.2, 1.6, 1.2), new THREE.Vector3(-2.45, -0.2, -0.3));
+      else if (key === 'tank_r') flyCamera(new THREE.Vector3(3.2, 1.6, 1.2), new THREE.Vector3(2.45, -0.2, -0.3));
+      else if (key === 'boost_pump' || key === 'gascolator') flyCamera(new THREE.Vector3(0.8, 0.3, -0.6), new THREE.Vector3(0, -0.4, -1.2));
+      else if (key === 'mech_pump') flyCamera(new THREE.Vector3(1.1, 0.2, -1.7), new THREE.Vector3(0.18, -0.15, -2.05));
+    }
+
+    document.getElementById('btn-recenter-part').addEventListener('click', () => {
+      if (SIM.activeComponent) focusComponent(SIM.activeComponent);
+      playClick();
+    });
+
+    // Raycast Interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('pointerdown', (event) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactiveMeshes, true);
+
+      if (intersects.length > 0) {
+        let hit = intersects[0].object;
+        while (hit && !hit.name && hit.parent) hit = hit.parent;
+        if (hit && hit.name) {
+          openInspector(hit.name);
+          focusComponent(hit.name);
+          playClick();
+        }
+      }
+    });
+
+    // Views Menu Presets
+    const btnViewsMenu = document.getElementById('btn-views-menu');
+    const viewsDropdown = document.getElementById('views-dropdown');
+
+    btnViewsMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      viewsDropdown.classList.toggle('hidden');
+      playClick();
+    });
+
+    window.addEventListener('click', () => viewsDropdown.classList.add('hidden'));
+
+    document.querySelectorAll('[data-cam]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-cam');
+        if (type === 'full') flyCamera(new THREE.Vector3(7.5, 4.8, 7.8), new THREE.Vector3(0, 0, 0));
+        else if (type === 'engine') flyCamera(new THREE.Vector3(1.5, 0.8, -1.2), new THREE.Vector3(0, 0, -2.4));
+        else if (type === 'primer') { flyCamera(new THREE.Vector3(0.8, 0.4, -1.5), new THREE.Vector3(0.28, 0.18, -1.95)); openInspector('primer_solenoid'); }
+        else if (type === 'carb') { flyCamera(new THREE.Vector3(0.7, -0.2, -1.8), new THREE.Vector3(0, -0.6, -2.45)); openInspector('carburetor'); }
+        else if (type === 'selector') { flyCamera(new THREE.Vector3(0, 1.1, 0.9), new THREE.Vector3(0, -0.38, -0.2)); openInspector('selector'); }
+        else if (type === 'wing') { flyCamera(new THREE.Vector3(-3.2, 1.6, 1.2), new THREE.Vector3(-2.45, -0.2, -0.3)); openInspector('tank_l'); }
+        viewsDropdown.classList.add('hidden');
+        playClick();
+      });
+    });
+
+    // X-Ray Toggle
+    document.getElementById('toggle-xray').addEventListener('click', () => {
+      SIM.xraySkin = !SIM.xraySkin;
+      skinMaterial.opacity = SIM.xraySkin ? 0.18 : 0.92;
+      skinMaterial.depthWrite = !SIM.xraySkin;
+      playClick();
+    });
+
+    // Scenarios & Sump Check Dialogs
+    const pillFailMech = document.getElementById('pill-fail-mech');
+    pillFailMech.addEventListener('click', () => {
+      initAudio();
+      SIM.enginePumpHealthy = !SIM.enginePumpHealthy;
+      playClick();
+      pillFailMech.className = SIM.enginePumpHealthy
+        ? "h-6 px-2 text-[10px] font-mono-num font-medium rounded-full hud-glass text-slate-300 hover:text-rose-300 hover:border-rose-500/50 border border-slate-800 transition-all flex items-center space-x-1"
+        : "h-6 px-2 text-[10px] font-mono-num font-medium rounded-full bg-rose-950 text-rose-300 border border-rose-500 transition-all flex items-center space-x-1";
+    });
+
+    const pillCarbIce = document.getElementById('pill-carb-ice');
+    pillCarbIce.addEventListener('click', () => {
+      initAudio();
+      SIM.carbIce = 0.65;
+      playClick();
+      openInspector('carburetor');
+    });
+
+    const sumpModal = document.getElementById('sump-modal');
+    document.getElementById('pill-sump-check').addEventListener('click', () => {
+      initAudio();
+      sumpModal.classList.remove('hidden');
+      playClick();
+    });
+    document.getElementById('close-sump-modal').addEventListener('click', () => sumpModal.classList.add('hidden'));
+    document.getElementById('btn-done-sump').addEventListener('click', () => sumpModal.classList.add('hidden'));
+
+    document.getElementById('btn-sample-left').addEventListener('click', () => {
+      initAudio();
+      playClick();
+      document.getElementById('sample-liquid-left').style.height = '70%';
+      document.getElementById('txt-sample-left').textContent = "100LL BLUE";
+      document.getElementById('txt-sample-left').className = "text-[8px] font-mono-num text-cyan-400 font-bold";
+    });
+
+    document.getElementById('btn-sample-right').addEventListener('click', () => {
+      initAudio();
+      playClick();
+      document.getElementById('sample-liquid-right').style.height = '70%';
+      document.getElementById('txt-sample-right').textContent = "100LL BLUE";
+      document.getElementById('txt-sample-right').className = "text-[8px] font-mono-num text-cyan-400 font-bold";
+    });
+
+    document.getElementById('btn-sample-gasc').addEventListener('click', () => {
+      initAudio();
+      playClick();
+      const liquid = document.getElementById('sample-liquid-gasc');
+      const waterLayer = document.getElementById('sample-water-layer');
+      liquid.style.height = '70%';
+
+      if (SIM.waterContamination) {
+        waterLayer.style.height = '35%';
+        document.getElementById('txt-sample-gasc').textContent = "WATER DETECTED!";
+        document.getElementById('txt-sample-gasc').className = "text-[8px] font-mono-num text-rose-400 font-bold animate-pulse";
+        setTimeout(() => {
+          waterLayer.style.height = '0%';
+          SIM.waterContamination = false;
+          document.getElementById('txt-sample-gasc').textContent = "PURGED (100LL)";
+          document.getElementById('txt-sample-gasc').className = "text-[8px] font-mono-num text-emerald-400 font-bold";
+        }, 1800);
+      } else {
+        waterLayer.style.height = '0%';
+        document.getElementById('txt-sample-gasc').textContent = "100LL BLUE";
+        document.getElementById('txt-sample-gasc').className = "text-[8px] font-mono-num text-cyan-400 font-bold";
+      }
+    });
+
+    document.getElementById('btn-inject-water').addEventListener('click', () => {
+      initAudio();
+      SIM.waterContamination = true;
+      playClick();
+      document.getElementById('sample-water-layer').style.height = '35%';
+      document.getElementById('txt-sample-gasc').textContent = "WATER CONTAMINATED";
+      document.getElementById('txt-sample-gasc').className = "text-[8px] font-mono-num text-rose-400 font-bold";
+    });
+
+    // POH Modal
+    const pohModal = document.getElementById('poh-modal');
+    document.getElementById('btn-info-modal').addEventListener('click', () => {
+      initAudio();
+      pohModal.classList.remove('hidden');
+      playClick();
+    });
+    document.getElementById('close-poh-modal').addEventListener('click', () => pohModal.classList.add('hidden'));
+    document.getElementById('btn-done-poh').addEventListener('click', () => pohModal.classList.add('hidden'));
+
+    // Audio Toggle
+    const audioToggle = document.getElementById('audio-toggle');
+    audioToggle.addEventListener('click', () => {
+      initAudio();
+      SIM.audioMuted = !SIM.audioMuted;
+      audioToggle.className = SIM.audioMuted
+        ? "w-7 h-7 rounded-md bg-slate-900/90 text-slate-400 border border-slate-700/80 flex items-center justify-center transition-all"
+        : "w-7 h-7 rounded-md bg-cyan-950 text-cyan-300 border border-cyan-500/50 flex items-center justify-center transition-all";
+      if (SIM.audioMuted) {
+        if (engineGain) engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        if (boostGain) boostGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        if (primerGain) primerGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      } else {
+        playClick();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = Math.min(clock.getDelta(), 0.1);
+      updatePhysics(delta);
+      updateCameraMove();
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      SIM.selectorDetentUnlocked = true;
+      setFuelSelector('LEFT');
+      animate();
+    };
+  </script>
+</body>
+</html>
